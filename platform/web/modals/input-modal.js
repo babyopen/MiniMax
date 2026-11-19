@@ -17,11 +17,28 @@ const GIONGBETA_INPUT_MODAL = {
     const root = document.documentElement;
     const body = document.body;
     const modal = GIONGBETA_INPUT_MODAL._modal;
+    const viewport = window.visualViewport;
+    const viewportScale = viewport?.scale || 1;
     const guard = {
       viewportContent: viewportMeta.content,
+      viewportContentChanged: false,
+      viewportScale,
+      visualViewport: viewport,
+      syncModalViewport: null,
       rootTouchAction: root.style.touchAction,
       bodyTouchAction: body.style.touchAction,
       modalTouchAction: modal.style.touchAction,
+      modalStyles: {
+        left: modal.style.left,
+        top: modal.style.top,
+        right: modal.style.right,
+        bottom: modal.style.bottom,
+        width: modal.style.width,
+        height: modal.style.height,
+        transform: modal.style.transform,
+        transformOrigin: modal.style.transformOrigin,
+        transitionProperty: modal.style.transitionProperty
+      },
       lastTapTime: 0,
       lastTapX: 0,
       lastTapY: 0,
@@ -29,14 +46,37 @@ const GIONGBETA_INPUT_MODAL = {
     };
     GIONGBETA_INPUT_MODAL._viewportGuard = guard;
 
-    const viewportParts = viewportMeta.content.split(',')
-      .map(part => part.trim())
-      .filter(part => part && !/^(maximum-scale|user-scalable)\s*=/i.test(part));
-    viewportParts.push('maximum-scale=1.0', 'user-scalable=no');
-    viewportMeta.content = viewportParts.join(', ');
+    // 非 1× 时改写 viewport 会重置 Chromium 可视区域，保留原值并仅拦截手势
+    if (viewportScale === 1) {
+      const viewportParts = viewportMeta.content.split(',')
+        .map(part => part.trim())
+        .filter(part => part && !/^(maximum-scale|user-scalable)\s*=/i.test(part));
+      viewportParts.push('maximum-scale=1.0', 'user-scalable=no');
+      viewportMeta.content = viewportParts.join(', ');
+      guard.viewportContentChanged = true;
+    }
     root.style.touchAction = 'none';
     body.style.touchAction = 'none';
     modal.style.touchAction = 'none';
+
+    // 抵消页面缩放，使遮罩始终对齐当前可视区域且不参与几何过渡
+    const syncModalViewport = () => {
+      if (!viewport) return;
+      const scale = viewport.scale || viewportScale;
+      modal.style.left = `${viewport.offsetLeft}px`;
+      modal.style.top = `${viewport.offsetTop}px`;
+      modal.style.right = 'auto';
+      modal.style.bottom = 'auto';
+      modal.style.width = `${viewport.width * scale}px`;
+      modal.style.height = `${viewport.height * scale}px`;
+      modal.style.transformOrigin = '0 0';
+      modal.style.transform = `scale(${1 / scale})`;
+      modal.style.transitionProperty = 'opacity, visibility';
+    };
+    guard.syncModalViewport = syncModalViewport;
+    viewport?.addEventListener('resize', syncModalViewport, { passive: true });
+    viewport?.addEventListener('scroll', syncModalViewport, { passive: true });
+    syncModalViewport();
 
     const preventDefault = (e) => {
       if (e.cancelable) e.preventDefault();
@@ -88,12 +128,20 @@ const GIONGBETA_INPUT_MODAL = {
     Object.entries(guard.handlers || {}).forEach(([type, handler]) => {
       document.removeEventListener(type, handler, true);
     });
+    if (guard.visualViewport && guard.syncModalViewport) {
+      guard.visualViewport.removeEventListener('resize', guard.syncModalViewport);
+      guard.visualViewport.removeEventListener('scroll', guard.syncModalViewport);
+    }
     const viewportMeta = document.querySelector('meta[name="viewport"]');
-    if (viewportMeta) viewportMeta.content = guard.viewportContent;
+    if (viewportMeta && guard.viewportContentChanged) viewportMeta.content = guard.viewportContent;
     document.documentElement.style.touchAction = guard.rootTouchAction;
     document.body.style.touchAction = guard.bodyTouchAction;
     if (GIONGBETA_INPUT_MODAL._modal) {
-      GIONGBETA_INPUT_MODAL._modal.style.touchAction = guard.modalTouchAction;
+      const modal = GIONGBETA_INPUT_MODAL._modal;
+      modal.style.touchAction = guard.modalTouchAction;
+      Object.entries(guard.modalStyles).forEach(([property, value]) => {
+        modal.style[property] = value;
+      });
     }
     GIONGBETA_INPUT_MODAL._viewportGuard = null;
   },
@@ -239,7 +287,6 @@ const GIONGBETA_INPUT_MODAL = {
       GIONGBETA_INPUT_MODAL.init();
     }
 
-    GIONGBETA_INPUT_MODAL._activateViewportGuard();
     GIONGBETA_INPUT_MODAL._title.innerText = title;
     GIONGBETA_INPUT_MODAL._input.placeholder = placeholder;
     GIONGBETA_INPUT_MODAL._input.value = defaultValue;
@@ -248,6 +295,7 @@ const GIONGBETA_INPUT_MODAL = {
     GIONGBETA_INPUT_MODAL._modal.style.opacity = '1';
     GIONGBETA_INPUT_MODAL._modal.style.visibility = 'visible';
     GIONGBETA_INPUT_MODAL._modal.querySelector('div').style.transform = 'scale(1)';
+    GIONGBETA_INPUT_MODAL._activateViewportGuard();
     
     setTimeout(() => {
       GIONGBETA_INPUT_MODAL._input.focus();

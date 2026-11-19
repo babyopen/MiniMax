@@ -4,6 +4,100 @@ const GIONGBETA_INPUT_MODAL = {
   _input: null,
   _title: null,
 
+  _viewportGuard: null,
+
+  /**
+   * 移动端弹窗激活期间禁止页面缩放，关闭后精确恢复打开前状态
+   */
+  _activateViewportGuard: () => {
+    if (GIONGBETA_INPUT_MODAL._viewportGuard || !window.matchMedia('(pointer: coarse)').matches) return;
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (!viewportMeta) return;
+
+    const root = document.documentElement;
+    const body = document.body;
+    const modal = GIONGBETA_INPUT_MODAL._modal;
+    const guard = {
+      viewportContent: viewportMeta.content,
+      rootTouchAction: root.style.touchAction,
+      bodyTouchAction: body.style.touchAction,
+      modalTouchAction: modal.style.touchAction,
+      lastTapTime: 0,
+      lastTapX: 0,
+      lastTapY: 0,
+      handlers: null
+    };
+    GIONGBETA_INPUT_MODAL._viewportGuard = guard;
+
+    const viewportParts = viewportMeta.content.split(',')
+      .map(part => part.trim())
+      .filter(part => part && !/^(maximum-scale|user-scalable)\s*=/i.test(part));
+    viewportParts.push('maximum-scale=1.0', 'user-scalable=no');
+    viewportMeta.content = viewportParts.join(', ');
+    root.style.touchAction = 'none';
+    body.style.touchAction = 'none';
+    modal.style.touchAction = 'none';
+
+    const preventDefault = (e) => {
+      if (e.cancelable) e.preventDefault();
+    };
+    const preventMultiTouch = (e) => {
+      if (e.touches.length > 1 && e.cancelable) e.preventDefault();
+    };
+    const preventDoubleClickZoom = (e) => {
+      if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
+      preventDefault(e);
+    };
+    const preventDoubleTapZoom = (e) => {
+      if (e.touches.length > 0 || e.target.closest('input, textarea, [contenteditable="true"]')) {
+        guard.lastTapTime = 0;
+        return;
+      }
+      const touch = e.changedTouches[0];
+      if (!touch) return;
+      const now = Date.now();
+      const isDoubleTap = now - guard.lastTapTime < 300 &&
+        Math.hypot(touch.clientX - guard.lastTapX, touch.clientY - guard.lastTapY) < 30;
+      if (isDoubleTap) {
+        preventDefault(e);
+        guard.lastTapTime = 0;
+      } else {
+        guard.lastTapTime = now;
+        guard.lastTapX = touch.clientX;
+        guard.lastTapY = touch.clientY;
+      }
+    };
+
+    guard.handlers = {
+      touchstart: preventMultiTouch,
+      touchmove: preventMultiTouch,
+      touchend: preventDoubleTapZoom,
+      gesturestart: preventDefault,
+      gesturechange: preventDefault,
+      gestureend: preventDefault,
+      dblclick: preventDoubleClickZoom
+    };
+    Object.entries(guard.handlers).forEach(([type, handler]) => {
+      document.addEventListener(type, handler, { capture: true, passive: false });
+    });
+  },
+
+  _deactivateViewportGuard: () => {
+    const guard = GIONGBETA_INPUT_MODAL._viewportGuard;
+    if (!guard) return;
+    Object.entries(guard.handlers || {}).forEach(([type, handler]) => {
+      document.removeEventListener(type, handler, true);
+    });
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (viewportMeta) viewportMeta.content = guard.viewportContent;
+    document.documentElement.style.touchAction = guard.rootTouchAction;
+    document.body.style.touchAction = guard.bodyTouchAction;
+    if (GIONGBETA_INPUT_MODAL._modal) {
+      GIONGBETA_INPUT_MODAL._modal.style.touchAction = guard.modalTouchAction;
+    }
+    GIONGBETA_INPUT_MODAL._viewportGuard = null;
+  },
+
   init: () => {
     GIONGBETA_INPUT_MODAL._modal = document.createElement('div');
     GIONGBETA_INPUT_MODAL._modal.id = 'giongbeta-input-modal';
@@ -144,7 +238,8 @@ const GIONGBETA_INPUT_MODAL = {
     if(!GIONGBETA_INPUT_MODAL._modal) {
       GIONGBETA_INPUT_MODAL.init();
     }
-    
+
+    GIONGBETA_INPUT_MODAL._activateViewportGuard();
     GIONGBETA_INPUT_MODAL._title.innerText = title;
     GIONGBETA_INPUT_MODAL._input.placeholder = placeholder;
     GIONGBETA_INPUT_MODAL._input.value = defaultValue;
@@ -166,5 +261,6 @@ const GIONGBETA_INPUT_MODAL = {
     GIONGBETA_INPUT_MODAL._modal.style.visibility = 'hidden';
     GIONGBETA_INPUT_MODAL._modal.querySelector('div').style.transform = 'scale(0.9)';
     GIONGBETA_INPUT_MODAL._input.value = '';
+    GIONGBETA_INPUT_MODAL._deactivateViewportGuard();
   }
 };

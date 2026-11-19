@@ -1,0 +1,862 @@
+/* ===================================
+   ui2.css - UI 2.0 液态玻璃设计系统层
+   规范来源：GooseHyperGlassCDN-2.5.1/catalog/types.ts
+   （gooseLight / gooseDark / gooseShadow / gooseGlassP）
+
+   原则：
+   1. 仅覆盖视觉呈现：色彩、字体栈、圆角、阴影、毛玻璃质感；
+   2. 不修改任何布局尺寸、Grid/Flex 结构、断点阈值、动画时长与交互状态类；
+   3. 所有选择器与原实现保持同名，交互类（active/locked/excluded/show/
+      collapsed/expanded/hide）视觉映射保持不变；
+   4. 加载顺序位于 ios-style.css 之后，仅做视觉承接与对齐。
+   =================================== */
+
+/* ---------------------------------------------------------------
+   01. 设计令牌（取自规范库 gooseLight / gooseGlassP / gooseShadow）
+   --------------------------------------------------------------- */
+:root{
+  /* 主色：规范库 tabsAccent / sliderAccent = #0088FF */
+  --ui2-accent:#0088FF;
+  --ui2-accent-weak:rgba(0,136,255,0.12);
+  --ui2-accent-line:rgba(0,136,255,0.30);
+
+  /* 语义色（保持原业务语义，仅统一色值口径） */
+  --ui2-success:#34C759;
+  --ui2-warning:#FF9500;
+  --ui2-danger:#FF3B30;
+
+  /* 玻璃表面：tabsContainer=rgba(250,250,250,.4) / dialogContainer=.6 */
+  --ui2-glass:rgba(250,250,250,0.42);        /* 导航、标签栏容器 */
+  --ui2-glass-card:rgba(255,255,255,0.58);    /* 内容卡片 */
+  --ui2-glass-strong:rgba(250,250,250,0.72);  /* 浮层卡片 */
+  --ui2-glass-dialog:rgba(250,250,250,0.60);  /* 弹窗 */
+  --ui2-surface-solid:rgba(255,255,255,0.94); /* 无模糊降级 */
+
+  /* 内嵌填充（替代原 rgba(255,255,255,0.06/0.08) 在浅色下不可见的问题） */
+  --ui2-fill:rgba(120,120,128,0.10);
+  --ui2-fill-2:rgba(120,120,128,0.06);
+  --ui2-fill-3:rgba(255,255,255,0.45);
+  --ui2-glass-row:rgba(255,255,255,0.42);
+
+  /* 描边：高光内描边 + 中性分隔线 */
+  --ui2-hairline:rgba(255,255,255,0.62);
+  --ui2-line:rgba(0,0,0,0.07);
+  --ui2-line-strong:rgba(0,0,0,0.12);
+
+  /* 阴影：gooseShadow = radius 24 / alpha .1 / offsetY 4 */
+  --ui2-shadow-sm:0 2px 12px rgba(0,0,0,0.06);
+  --ui2-shadow:0 4px 24px rgba(0,0,0,0.10);
+  --ui2-shadow-lg:0 12px 40px rgba(0,0,0,0.20);
+  --ui2-inset:inset 0 1px 0 rgba(255,255,255,0.70);
+
+  /* 圆角：连续曲率（squircle）近似 */
+  --ui2-radius-sm:12px;
+  --ui2-radius:18px;
+  --ui2-radius-lg:22px;
+  --ui2-radius-pill:999px;
+
+  /* 模糊：dialogBlurRadius = 16dp / saturation = 1.5 */
+  --ui2-blur:16px;
+  --ui2-saturate:1.5;
+
+  /* 覆盖旧令牌，令全站组件自动对齐 UI 2.0 */
+  --primary:var(--ui2-accent);
+  --blue:var(--ui2-accent);
+  --danger:var(--ui2-danger);
+  --green:var(--ui2-success);
+  --border:var(--ui2-line);
+  --radius-sm:var(--ui2-radius-sm);
+  --radius:var(--ui2-radius);
+  --radius-lg:var(--ui2-radius-lg);
+  --shadow-sm:var(--ui2-shadow-sm);
+  --shadow:var(--ui2-shadow);
+  --bg-secondary:var(--ui2-fill);
+
+  /* 底部导航玻璃令牌（ios-style.css 同名变量） */
+  --nav-glass-bg:var(--ui2-glass);
+  --nav-glass-border:var(--ui2-hairline);
+  --nav-glass-shadow:rgba(0,0,0,0.10);
+  --nav-item-bg:rgba(120,120,128,0.10);
+  --nav-item-border:rgba(0,0,0,0.06);
+  --nav-item-text:rgba(60,60,67,0.55);
+  --nav-item-active-text:var(--ui2-accent);
+  --nav-item-active-bg:var(--ui2-accent-weak);
+}
+
+/* ---------------------------------------------------------------
+   02. 基础层：字体栈与全局壁纸
+   字体：gooseFont（SF Pro Text 优先；图标字体类特异性更高，不受影响）
+   --------------------------------------------------------------- */
+/* 仅作用于元素本身，不能覆盖 ::before/::after，
+   否则会取代 Font Awesome 伪元素继承的图标字体导致图标丢失 */
+*{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI","Helvetica Neue",Arial,sans-serif;
+}
+body{
+  /* 液态玻璃需要背景层次才能呈现折射与饱和度，使用低饱和环境光渐变 */
+  background:
+    radial-gradient(1200px 760px at 8% -12%, rgba(0,136,255,0.18), transparent 62%),
+    radial-gradient(1000px 700px at 104% -4%, rgba(175,82,222,0.13), transparent 58%),
+    radial-gradient(900px 680px at 50% 112%, rgba(52,199,89,0.11), transparent 62%),
+    var(--bg);
+  background-attachment:fixed;
+}
+
+/* ---------------------------------------------------------------
+   03. 玻璃表面：卡片 / 顶部展示区 / 排行容器
+   --------------------------------------------------------------- */
+.card,
+.analysis-card,
+.top-card{
+  background:var(--ui2-glass-card);
+  -webkit-backdrop-filter:blur(var(--ui2-blur)) saturate(var(--ui2-saturate));
+  backdrop-filter:blur(var(--ui2-blur)) saturate(var(--ui2-saturate));
+  border-radius:var(--ui2-radius);
+  box-shadow:var(--ui2-shadow),var(--ui2-inset);
+}
+.card,
+.analysis-card{
+  outline:0.5px solid var(--ui2-hairline);
+  outline-offset:-0.5px;
+}
+.top-card{
+  border-radius:var(--ui2-radius-lg);
+  outline:0.5px solid var(--ui2-hairline);
+  outline-offset:-0.5px;
+}
+/* 内层信息块：不重复叠加背景模糊，避免双重玻璃与性能开销 */
+.hot-card,
+.color-analysis-card,
+.combined-analysis-card{
+  background:var(--ui2-fill-3);
+  border-color:var(--ui2-hairline);
+  border-radius:14px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.55);
+}
+.top-box{
+  background:rgba(242,242,247,0.66);
+  -webkit-backdrop-filter:blur(20px) saturate(var(--ui2-saturate));
+  backdrop-filter:blur(20px) saturate(var(--ui2-saturate));
+  box-shadow:0 0.5px 0 var(--ui2-line);
+}
+body.low-performance-mode .top-box,
+body.low-perf .top-box{
+  background:var(--bg);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+
+/* 浮层/下拉/弹窗表面 */
+.filter-group-menu,
+.batch-modal-content,
+.backtest-modal-content{
+  background:var(--ui2-glass-strong);
+  -webkit-backdrop-filter:blur(var(--ui2-blur)) saturate(var(--ui2-saturate));
+  backdrop-filter:blur(var(--ui2-blur)) saturate(var(--ui2-saturate));
+  border-radius:var(--ui2-radius-lg);
+  box-shadow:var(--ui2-shadow-lg),var(--ui2-inset);
+  outline:0.5px solid var(--ui2-hairline);
+  outline-offset:-0.5px;
+}
+
+/* ---------------------------------------------------------------
+   04. 按钮体系
+   --------------------------------------------------------------- */
+.btn-line{
+  background:linear-gradient(180deg,#1D95FF 0%,var(--ui2-accent) 52%,#0077E6 100%);
+  border-radius:var(--ui2-radius-pill);
+  box-shadow:0 4px 14px rgba(0,136,255,0.28),inset 0 1px 0 rgba(255,255,255,0.35);
+  color:#FFFFFF;
+}
+.btn-line:active{opacity:0.82}
+
+.btn-mini,
+.btn-icon,
+.analysis-refresh-btn,
+.analysis-filter-btn,
+.load-more,
+.filter-expand,
+.toggle-btn,
+.filter-item-btns button{
+  background:var(--ui2-fill);
+  border-radius:var(--ui2-radius-sm);
+  box-shadow:inset 0 0.5px 0 var(--ui2-hairline);
+}
+.btn-mini,
+.btn-icon{color:var(--ui2-accent)}
+.btn-icon{border-radius:var(--ui2-radius-sm)}
+
+.btn-mini.red,
+.btn-icon-red,
+.filter-item-btns .del{
+  background:rgba(255,59,48,0.10);
+  color:var(--ui2-danger);
+}
+
+.analysis-refresh-btn,
+.analysis-filter-btn{
+  background:var(--ui2-accent);
+  border-radius:var(--ui2-radius-pill);
+  box-shadow:0 4px 14px rgba(0,136,255,0.24),inset 0 1px 0 rgba(255,255,255,0.30);
+}
+.analysis-filter-btn{border-radius:var(--ui2-radius-sm)}
+
+.toggle-btn{
+  background:var(--ui2-accent-weak);
+  border-radius:var(--ui2-radius-pill);
+  color:var(--ui2-accent);
+}
+
+.load-more,
+.filter-expand{
+  background:var(--ui2-accent-weak);
+  border-radius:var(--ui2-radius-sm);
+  color:var(--ui2-accent);
+}
+
+.filter-item-btns button{
+  background:rgba(255,255,255,0.42);
+  color:var(--ui2-accent);
+}
+
+/* 底部返回顶部按钮 */
+.back-top-btn{
+  background:var(--ui2-accent);
+  -webkit-backdrop-filter:blur(12px) saturate(var(--ui2-saturate));
+  backdrop-filter:blur(12px) saturate(var(--ui2-saturate));
+  box-shadow:0 6px 20px rgba(0,136,255,0.35),inset 0 1px 0 rgba(255,255,255,0.30);
+}
+
+/* ---------------------------------------------------------------
+   05. 标签 / 号码球 / 排除网格
+   --------------------------------------------------------------- */
+.tag{
+  background:var(--ui2-fill);
+  border-radius:var(--ui2-radius-pill);
+  box-shadow:inset 0 0.5px 0 var(--ui2-hairline);
+}
+.tag.active{
+  background:linear-gradient(180deg,#1D95FF 0%,var(--ui2-accent) 60%);
+  color:#FFFFFF;
+  box-shadow:0 3px 10px rgba(0,136,255,0.28),inset 0 1px 0 rgba(255,255,255,0.35);
+}
+.tag.locked{
+  background:rgba(255,59,48,0.12);
+  color:var(--ui2-danger);
+  box-shadow:inset 0 0 0 0.5px rgba(255,59,48,0.22);
+}
+.num-tags .tag,
+.exclude-tag{
+  border-radius:14px;
+}
+.num-tags .tag.active{
+  background:linear-gradient(180deg,#1D95FF 0%,var(--ui2-accent) 60%);
+}
+.exclude-tag{
+  background:var(--ui2-fill);
+  box-shadow:inset 0 0.5px 0 var(--ui2-hairline);
+}
+.exclude-tag.excluded{
+  background:linear-gradient(180deg,#FF5B52 0%,var(--ui2-danger) 65%);
+  color:#FFFFFF;
+  box-shadow:0 3px 10px rgba(255,59,48,0.24);
+}
+.num-ball{
+  box-shadow:inset 0 1px 2px rgba(255,255,255,0.35),0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* 方案预览标签 */
+.zodiac-preview-tag{
+  border-radius:var(--ui2-radius-pill);
+  background:var(--ui2-fill-2);
+}
+.zodiac-preview-tag.selected{
+  background:var(--ui2-accent-weak);
+  color:var(--ui2-accent);
+  border-color:var(--ui2-accent-line);
+}
+.zodiac-preview-tag.marked{
+  background:rgba(255,255,255,0.42);
+  border-color:var(--ui2-line);
+}
+
+/* ---------------------------------------------------------------
+   06. 列表 / 统计块 / 排行 / 表格
+   --------------------------------------------------------------- */
+.filter-item,
+.analysis-item,
+.analysis-item-full,
+.hot-summary-row,
+.detail-box,
+.rank-box,
+.core-conclusion,
+.data-item-z,
+.unrec-card,
+.unrec-chip,
+.db-miss-item,
+.zone-zod-card,
+.sw-stat-item,
+.latest-follow-content,
+.latest-follow-item,
+.follow-zodiac,
+.size-analysis-content,
+.size-stat-item,
+.size-trend-section,
+.oddeven-analysis-content,
+.oddeven-stat-item,
+.oddeven-trend-section,
+.wuxing-analysis-content,
+.wuxing-stat-item,
+.wuxing-trend-section,
+.color-analysis-header,
+.color-analysis-content,
+.color-stat-item,
+.color-trend-section,
+.combined-tabs,
+.combined-content,
+.combined-stat,
+.wx-stat,
+.cl-stat,
+.combined-trend,
+.strategy-panel,
+.backtest-summary,
+.backtest-record-row,
+.backtest-section-group,
+.zone-change-card,
+.zone-change-zone-tag,
+.sw-freshness,
+.zone-change-miss,
+.zone-change-multi-col,
+.zone-change-combo-stats-col,
+.zone-change-combo-item{
+  background:var(--ui2-fill); /* 原多处 rgba(255,255,255,0.06/0.08) 在浅色卡片上不可见 */
+}
+
+/* 历史开奖行：玻璃底色，首尾行圆角形成整组玻璃面板（间距/尺寸保持不变） */
+.history-item{
+  background:var(--ui2-glass-row);
+  -webkit-backdrop-filter:blur(10px) saturate(1.4);
+  backdrop-filter:blur(10px) saturate(1.4);
+  box-shadow:inset 0 0.5px 0 var(--ui2-hairline);
+}
+#historyList .history-item{
+  border-radius:12px; /* 行间已有 10px 间距，每行独立成玻璃卡片 */
+}
+
+.rank-box,
+.core-conclusion,
+.detail-box{
+  border-radius:var(--ui2-radius-sm);
+  box-shadow:inset 0 0 0 0.5px var(--ui2-line);
+}
+
+.analysis-item,
+.analysis-item-full,
+.hot-summary-row,
+.sw-stat-item,
+.data-item-z,
+.db-miss-item,
+.zone-zod-card,
+.strategy-panel,
+.backtest-summary,
+.zone-change-card,
+.sw-freshness{
+  border-radius:var(--ui2-radius-sm);
+}
+
+.filter-item{border-radius:var(--ui2-radius-sm)}
+.core-conclusion{
+  background:rgba(255,59,48,0.05);
+}
+.data-item-z.hot{background:rgba(52,199,89,0.12);color:#0E9F55}
+.data-item-z.cold{background:rgba(255,59,48,0.10);color:var(--ui2-danger)}
+.data-item-z.warm{background:rgba(255,149,0,0.12);color:#C77400}
+.final-recommend-z{background:rgba(52,199,89,0.12);color:#0E9F55}
+
+/* 表格表面 */
+.freq-table-wrap,
+.follow-table-z{
+  border-radius:var(--ui2-radius-sm);
+  border-color:var(--ui2-line);
+  overflow:hidden;
+}
+.freq-table th,
+.follow-table-z th{
+  background:var(--ui2-fill-2);
+}
+.freq-table th,
+.freq-table td,
+.follow-table-z th,
+.follow-table-z td{
+  border-color:var(--ui2-line);
+}
+.rank-header,
+.rank-row,
+.history-item,
+.freq-section,
+.latest-follow-chain{
+  border-color:var(--ui2-line);
+}
+
+/* 进度条底槽（原 rgba(0,0,0,.1) 偏硬，改为中性半透明） */
+.wuxing-stat-bar-bg,
+.color-stat-bar-bg,
+.wx-bar-bg,
+.cl-bar-bg,
+.strategy-weight-track,
+.zone-change-bar-track,
+.sw-rank-bar-track{
+  background:var(--ui2-fill);
+  border-radius:var(--ui2-radius-pill);
+}
+.wuxing-stat-bar-fill,
+.color-stat-bar-fill,
+.wx-bar-fill,
+.cl-bar-fill,
+.strategy-weight-fill,
+.zone-change-bar-fill,
+.sw-rank-bar-fill{
+  border-radius:var(--ui2-radius-pill);
+}
+
+/* 排行榜徽章卡（保留名次语义渐变，只叠加玻璃高光与统一投影） */
+.db-card-item,
+.zodiac-static-card{
+  box-shadow:var(--ui2-shadow-sm),inset 0 1px 0 rgba(255,255,255,0.45);
+}
+.db-result-container{
+  background:linear-gradient(135deg,rgba(0,136,255,0.07),rgba(175,82,222,0.07));
+  border-radius:var(--ui2-radius-lg);
+}
+
+/* 筛选方案分组栏 */
+.filter-group-tab{
+  background:var(--ui2-fill);
+  border-color:var(--ui2-line);
+  border-radius:var(--ui2-radius-pill);
+}
+.filter-group-tab.active{
+  background:var(--ui2-accent);
+  border-color:var(--ui2-accent);
+  box-shadow:0 3px 12px rgba(0,136,255,0.26),inset 0 1px 0 rgba(255,255,255,0.30);
+}
+.filter-group-btn{
+  background:var(--ui2-fill);
+  border-color:var(--ui2-line);
+  border-radius:var(--ui2-radius-sm);
+}
+
+/* ---------------------------------------------------------------
+   07. 导航体系（底部主导航 / 快捷导航 / 标签栏）
+   --------------------------------------------------------------- */
+.bottom-nav{
+  background:var(--ui2-glass);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  backdrop-filter:blur(20px) saturate(180%);
+  box-shadow:0 4px 24px rgba(0,0,0,0.10),inset 0 1px 0 var(--ui2-hairline),0 0 0 0.5px var(--ui2-line);
+}
+.bottom-nav-toggle{
+  background:var(--ui2-glass);
+  border-color:var(--ui2-hairline);
+}
+.bottom-nav-toggle.active{
+  background:var(--ui2-accent-weak);
+  color:var(--ui2-accent);
+  border-color:var(--ui2-accent-line);
+  box-shadow:0 4px 16px rgba(0,136,255,0.24),inset 0 1px 0 var(--ui2-hairline);
+}
+.bottom-nav-item.active{
+  background:var(--ui2-accent-weak);
+  box-shadow:inset 0 0.5px 0 var(--ui2-hairline);
+}
+
+.quick-nav{
+  background:var(--ui2-glass);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  backdrop-filter:blur(20px) saturate(180%);
+  border-radius:var(--ui2-radius-lg);
+  box-shadow:0 8px 32px rgba(0,0,0,0.12),inset 0 1px 0 var(--ui2-hairline),0 0 0 0.5px var(--ui2-line);
+}
+.nav-tab{
+  background:var(--ui2-fill-2);
+  border-color:var(--ui2-line);
+  border-radius:var(--ui2-radius-pill);
+}
+.nav-tab:active{
+  background:var(--ui2-accent-weak);
+  color:var(--ui2-accent);
+}
+
+/* 页面级标签栏 */
+.analysis-tab-btn,
+.zodiac-tab-btn{
+  background:var(--ui2-fill);
+  border-radius:16px;
+  box-shadow:inset 0 0.5px 0 var(--ui2-hairline);
+}
+.analysis-tab-btn.active{background:var(--ui2-danger);box-shadow:0 4px 14px rgba(255,59,48,0.24)}
+.analysis-tab-btn[data-analysis-tab="analysis"].active{background:var(--ui2-accent);box-shadow:0 4px 14px rgba(0,136,255,0.26)}
+.analysis-tab-btn[data-analysis-tab="zodiac"].active{background:#13A662;box-shadow:0 4px 14px rgba(19,166,98,0.24)}
+.zodiac-tab-btn.active{background:var(--ui2-accent);box-shadow:0 4px 14px rgba(0,136,255,0.26)}
+.zodiac-tab-btn[data-zodiac-tab="giong"].active{background:#AF52DE;box-shadow:0 4px 14px rgba(175,82,222,0.24)}
+.zodiac-tab-btn[data-zodiac-tab="db"].active{background:var(--ui2-accent)}
+
+/* 频率/预测标签 */
+.freq-tab-btn{
+  background:var(--ui2-fill-2);
+  border-radius:var(--ui2-radius-pill);
+}
+.freq-tab-btn.active{
+  background:var(--ui2-accent);
+  box-shadow:0 3px 12px rgba(0,136,255,0.24);
+}
+.combined-tab{
+  border-radius:var(--ui2-radius-sm);
+}
+.combined-tab.active{
+  background:rgba(147,51,234,0.08);
+}
+.freq-swiper-dots,
+.zone-swiper-dots{
+  background:transparent;
+}
+.freq-swiper-dot.active,
+.zone-swiper-dot.active{
+  background:var(--ui2-accent);
+}
+
+/* 滚动条滑块轻量化（视觉，不改变滚动行为） */
+.top-nums::-webkit-scrollbar-thumb,
+.filter-preview::-webkit-scrollbar-thumb{
+  background:rgba(120,120,128,0.35);
+  border-radius:var(--ui2-radius-pill);
+}
+
+/* ---------------------------------------------------------------
+   08. 表单 / 提示 / 加载
+   --------------------------------------------------------------- */
+.analysis-filter-select,
+.analysis-filter-input,
+.batch-modal-input{
+  background:var(--ui2-fill-2);
+  border:0.5px solid var(--ui2-line);
+  border-radius:var(--ui2-radius-sm);
+  color:var(--text);
+  transition:border-color var(--anim-fast),box-shadow var(--anim-fast);
+}
+.analysis-filter-select:focus,
+.analysis-filter-input:focus,
+.batch-modal-input:focus{
+  border-color:var(--ui2-accent);
+  box-shadow:0 0 0 3px var(--ui2-accent-weak);
+  outline:none;
+}
+.batch-modal-header{
+  border-bottom-color:var(--ui2-line);
+}
+.batch-modal-btn{
+  background:linear-gradient(180deg,#1D95FF 0%,var(--ui2-accent) 60%);
+  border-radius:var(--ui2-radius-sm);
+  box-shadow:0 4px 14px rgba(0,136,255,0.24),inset 0 1px 0 rgba(255,255,255,0.30);
+}
+.batch-modal-overlay,
+.backtest-modal-overlay{
+  background:rgba(41,41,58,0.38);
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
+}
+
+.toast{
+  background:rgba(28,28,30,0.82);
+  -webkit-backdrop-filter:blur(var(--ui2-blur)) saturate(var(--ui2-saturate));
+  backdrop-filter:blur(var(--ui2-blur)) saturate(var(--ui2-saturate));
+  border-radius:var(--ui2-radius-sm);
+  box-shadow:var(--ui2-shadow-lg),inset 0 0.5px 0 rgba(255,255,255,0.18);
+}
+.loading-spinner{
+  border-color:var(--ui2-fill);
+  border-top-color:var(--ui2-accent);
+}
+.empty-tip,
+.disclaimer{
+  color:var(--sub-text);
+}
+
+/* ---------------------------------------------------------------
+   09. 平台层弹窗（JS 内联样式，使用 !important 对齐）
+   --------------------------------------------------------------- */
+#zodiac-stat-modal > div,
+#giongbeta-input-modal > div,
+#giongbeta-confirm-modal > div,
+#unrec-source-modal > div{
+  background:var(--ui2-glass-dialog) !important;
+  -webkit-backdrop-filter:blur(var(--ui2-blur)) saturate(var(--ui2-saturate)) !important;
+  backdrop-filter:blur(var(--ui2-blur)) saturate(var(--ui2-saturate)) !important;
+  border-radius:var(--ui2-radius-lg) !important;
+  box-shadow:var(--ui2-shadow-lg),var(--ui2-inset) !important;
+}
+#zodiac-stat-modal,
+#giongbeta-input-modal,
+#giongbeta-confirm-modal,
+#unrec-source-modal,
+#overlapModal,
+.backtest-detail-modal,
+.batch-modal{
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
+}
+#zodiac-stat-modal,
+#giongbeta-input-modal,
+#giongbeta-confirm-modal,
+#unrec-source-modal,
+#overlapModal{
+  background:rgba(41,41,58,0.38) !important;
+}
+#overlapModal > div{
+  background:var(--ui2-glass-dialog) !important;
+  -webkit-backdrop-filter:blur(var(--ui2-blur)) saturate(var(--ui2-saturate)) !important;
+  backdrop-filter:blur(var(--ui2-blur)) saturate(var(--ui2-saturate)) !important;
+  border-radius:var(--ui2-radius-lg) !important;
+  box-shadow:var(--ui2-shadow-lg),var(--ui2-inset) !important;
+}
+#overlapCloseBtn,
+#overlapModal .copy-nums-btn{
+  background:var(--ui2-accent) !important;
+  border-radius:var(--ui2-radius-sm) !important;
+  box-shadow:0 4px 14px rgba(0,136,255,0.24),inset 0 1px 0 rgba(255,255,255,0.30) !important;
+}
+#overlapModal div[style*="background: #f5f5f5"],
+#zodiac-stat-content [style*="background: #f5f5f5"]{
+  background:var(--ui2-fill) !important;
+  border-radius:var(--ui2-radius-sm) !important;
+}
+#overlapModal div[style*="background: #fff"],
+#zodiac-stat-content [style*="background: rgba(255,255,255,0.5)"]{
+  background:var(--ui2-fill-2) !important;
+  border-radius:var(--ui2-radius-sm) !important;
+}
+#overlapModal div[style*="color: #999"],
+#overlapModal div[style*="color: #666"]{
+  color:var(--sub-text) !important;
+}
+#zodiac-stat-confirm,
+#giongbeta-modal-confirm,
+#unrec-source-confirm{
+  background:var(--ui2-accent) !important;
+  border-radius:var(--ui2-radius-sm) !important;
+  box-shadow:0 4px 14px rgba(0,136,255,0.24),inset 0 1px 0 rgba(255,255,255,0.30) !important;
+}
+#giongbeta-confirm-ok{
+  background:var(--ui2-danger) !important;
+  border-radius:var(--ui2-radius-sm) !important;
+}
+#giongbeta-confirm-cancel,
+#giongbeta-modal-cancel{
+  background:transparent !important;
+  border:0.5px solid var(--ui2-line-strong) !important;
+  border-radius:var(--ui2-radius-sm) !important;
+  color:var(--sub-text) !important;
+}
+#giongbeta-modal-input{
+  background:var(--ui2-fill-2) !important;
+  border:0.5px solid var(--ui2-line) !important;
+  border-radius:var(--ui2-radius-sm) !important;
+}
+#zodiac-stat-modal > div > div:first-child,
+#giongbeta-input-modal > div > div:first-child,
+#unrec-source-modal > div > div:first-child{
+  border-bottom:0.5px solid var(--ui2-line) !important;
+}
+
+/* ---------------------------------------------------------------
+   10. 暗色主题令牌（gooseDark）
+   --------------------------------------------------------------- */
+@media (prefers-color-scheme: dark){
+  :root{
+    --ui2-accent:#0091FF;
+    --ui2-accent-weak:rgba(0,145,255,0.16);
+    --ui2-accent-line:rgba(0,145,255,0.34);
+
+    --ui2-glass:rgba(18,18,18,0.42);
+    --ui2-glass-card:rgba(28,28,30,0.58);
+    --ui2-glass-strong:rgba(28,28,30,0.82);
+    --ui2-glass-dialog:rgba(18,18,18,0.46);
+    --ui2-surface-solid:rgba(28,28,30,0.96);
+
+    --ui2-fill:rgba(255,255,255,0.07);
+    --ui2-fill-2:rgba(255,255,255,0.05);
+    --ui2-fill-3:rgba(255,255,255,0.06);
+    --ui2-glass-row:rgba(255,255,255,0.055);
+
+    --ui2-hairline:rgba(255,255,255,0.12);
+    --ui2-line:rgba(255,255,255,0.10);
+    --ui2-line-strong:rgba(255,255,255,0.18);
+
+    --ui2-shadow-sm:0 2px 12px rgba(0,0,0,0.30);
+    --ui2-shadow:0 4px 24px rgba(0,0,0,0.36);
+    --ui2-shadow-lg:0 12px 40px rgba(0,0,0,0.50);
+    --ui2-inset:inset 0 1px 0 rgba(255,255,255,0.06);
+
+    --primary:var(--ui2-accent);
+    --blue:var(--ui2-accent);
+    --bg-secondary:var(--ui2-fill);
+
+    --nav-glass-bg:var(--ui2-glass);
+    --nav-item-bg:rgba(255,255,255,0.06);
+    --nav-item-border:rgba(255,255,255,0.12);
+    --nav-item-text:rgba(235,235,245,0.55);
+    --nav-item-active-text:var(--ui2-accent);
+    --nav-item-active-bg:var(--ui2-accent-weak);
+  }
+
+  body{
+    background:
+      radial-gradient(1200px 760px at 8% -12%, rgba(0,145,255,0.22), transparent 62%),
+      radial-gradient(1000px 700px at 104% -4%, rgba(191,90,242,0.16), transparent 58%),
+      radial-gradient(900px 680px at 50% 112%, rgba(48,209,88,0.10), transparent 62%),
+      var(--bg);
+  }
+  .top-box{
+    background:rgba(0,0,0,0.62);
+    box-shadow:0 0.5px 0 rgba(255,255,255,0.10);
+  }
+  body.low-performance-mode .top-box,
+  body.low-perf .top-box{
+    background:var(--bg);
+  }
+
+  /* 兼容 JS 运行时注入的暗色样式（优先级高于其 !important） */
+  :root #zodiac-stat-modal > div,
+  :root #giongbeta-input-modal > div,
+  :root #giongbeta-confirm-modal > div,
+  :root #unrec-source-modal > div{
+    background:var(--ui2-glass-dialog) !important;
+    border-radius:var(--ui2-radius-lg) !important;
+  }
+  :root #zodiac-stat-confirm,
+  :root #giongbeta-modal-confirm,
+  :root #unrec-source-confirm{
+    background:var(--ui2-accent) !important;
+  }
+  :root #overlapModal > div{
+    background:var(--ui2-glass-dialog) !important;
+    box-shadow:var(--ui2-shadow-lg) !important;
+  }
+  :root #overlapCloseBtn,
+  :root #overlapModal .copy-nums-btn{
+    background:var(--ui2-accent) !important;
+  }
+  :root #overlapModal div[style*="background: #f5f5f5"]{
+    background:var(--ui2-fill) !important;
+  }
+  #zodiac-stat-modal,
+  #giongbeta-input-modal,
+  #giongbeta-confirm-modal,
+  #unrec-source-modal,
+  #overlapModal{
+    background:rgba(0,0,0,0.56) !important;
+  }
+  .zodiac-preview-tag.marked{
+    background:rgba(255,255,255,0.08);
+  }
+  .db-result-container{
+    background:linear-gradient(135deg,rgba(0,145,255,0.12),rgba(191,90,242,0.12));
+  }
+  .filter-item-btns button{
+    background:rgba(255,255,255,0.08);
+  }
+  .data-item-z.hot{background:rgba(48,209,88,0.16);color:#5BD672}
+  .data-item-z.warm{background:rgba(255,179,64,0.16);color:#FFB340}
+  .final-recommend-z{background:rgba(48,209,88,0.16);color:#5BD672}
+}
+
+/* ---------------------------------------------------------------
+   11. 降级与无障碍（与既有策略保持一致）
+   --------------------------------------------------------------- */
+/* 低端设备：去掉玻璃模糊与投影，改用实底 */
+body.low-performance-mode .card,
+body.low-performance-mode .analysis-card,
+body.low-performance-mode .top-card,
+body.low-performance-mode .filter-group-menu,
+body.low-performance-mode .batch-modal-content,
+body.low-performance-mode .backtest-modal-content,
+body.low-performance-mode #zodiac-stat-modal > div,
+body.low-performance-mode #giongbeta-input-modal > div,
+body.low-performance-mode #giongbeta-confirm-modal > div,
+body.low-performance-mode #unrec-source-modal > div,
+body.low-perf .card,
+body.low-perf .analysis-card,
+body.low-perf .top-card{
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  background:var(--ui2-surface-solid) !important;
+  box-shadow:none !important;
+}
+body.low-performance-mode .history-item,
+body.low-perf .history-item{
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  background:var(--ui2-fill) !important;
+  box-shadow:none !important;
+}
+
+/* 减少透明度偏好：实底、去模糊（ios-style.css 已覆盖导航，这里补齐卡片与浮层） */
+@media (prefers-reduced-transparency: reduce){
+  .card,
+  .analysis-card,
+  .top-card,
+  .filter-group-menu,
+  .batch-modal-content,
+  .backtest-modal-content,
+  #zodiac-stat-modal > div,
+  #giongbeta-input-modal > div,
+  #giongbeta-confirm-modal > div,
+  #unrec-source-modal > div{
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+    background:var(--ui2-surface-solid) !important;
+  }
+  .top-box{
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+    background:var(--bg) !important;
+  }
+  .toast{
+    background:rgba(0,0,0,0.92) !important;
+  }
+  .history-item{
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+    background:var(--ui2-fill) !important;
+  }
+}
+
+/* 不支持 backdrop-filter 时回退为实底，避免文字与背景对比不足 */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .card,
+  .analysis-card,
+  .top-card,
+  .filter-group-menu,
+  .batch-modal-content,
+  .backtest-modal-content,
+  .bottom-nav,
+  .quick-nav,
+  #zodiac-stat-modal > div,
+  #giongbeta-input-modal > div,
+  #giongbeta-confirm-modal > div,
+  #unrec-source-modal > div{
+    background:var(--ui2-surface-solid) !important;
+  }
+  .top-box{background:var(--bg) !important}
+  .history-item{background:var(--ui2-fill) !important}
+}
+
+/* 提高对比度偏好：为玻璃卡片补清晰外描边 */
+@media (prefers-contrast: more){
+  .card,
+  .analysis-card,
+  .top-card{
+    outline:1px solid var(--text) !important;
+    outline-offset:-1px;
+  }
+}

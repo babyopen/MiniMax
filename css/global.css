@@ -94,6 +94,11 @@ body{
   min-width:36px;width:36px;height:36px;padding:0;display:grid;place-items:center;border-radius:10px;font-size:15px;
   background:var(--bg-secondary);color:var(--primary);
   border:2px solid transparent;
+  position:relative;
+}
+/* 视觉保持 36px，热区扩到 Apple 建议的 44×44，避免误触 */
+.btn-icon::after{
+  content:'';position:absolute;inset:-4px;border-radius:14px;
 }
 .btn-icon-red{background:rgba(255,59,48,0.1) !important;color:var(--danger) !important}
 .btn-bar{display:flex;gap:8px;margin-bottom:12px}
@@ -207,7 +212,8 @@ body{
 .batch-modal-hint{font-size:12px;color:var(--sub-text);margin-bottom:10px}
 .batch-modal-input{
   width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:12px;
-  font-size:14px;background:var(--bg-secondary);color:var(--text);outline:none;
+  /* 16px：避免 iOS 聚焦时自动放大页面 */
+  font-size:16px;background:var(--bg-secondary);color:var(--text);outline:none;
   margin-bottom:12px;box-sizing:border-box;
 }
 .batch-modal-input:focus{border-color:var(--primary)}

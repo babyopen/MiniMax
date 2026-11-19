@@ -15,7 +15,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, shrink-to-fit=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -868,6 +868,7 @@
 <!-- 业务层：禁止DOM操作 -->
 <script src="business/business-cross-exclusion.js"></script>
 <script src="business/business-main.js"></script>
+<script src="business/business-filter-group.js"></script>
 <!-- 生肖预测（门面 + 5 个子模块，2026-06-05 按文件夹整理到 business/zodiac/） -->
 <script src="business/zodiac/business-zodiac-prediction.js"></script>
 <!-- 兼容路径：business-zodiac-prediction.js 拆分出的子模块（2026-06-05），自动挂载到 ZodiacPrediction 上 -->
@@ -888,6 +889,7 @@
 
 <script src="views/view-common.js"></script>
     <script src="views/view-filter.js"></script>
+    <script src="views/view-filter-group.js"></script>
 <!-- 兼容路径：view-filter.js 拆分出的子模块（2026-06-05），自动挂载到 ViewFilter 上 -->
 <!-- 弹窗视图子模块（2026-06-05 整理到 views/modals/） -->
 <script src="views/modals/view-batch-modal.js"></script>

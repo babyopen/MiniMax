@@ -92,15 +92,21 @@ const ViewFilter = {
    * @param {boolean} shouldOpen - 是否展开
    */
   toggleQuickNavUI: (shouldOpen) => {
+    // 清掉上一次收起时的延迟隐藏，避免快速连点导致内容被误隐藏
+    if (ViewFilter._navHideTimer) clearTimeout(ViewFilter._navHideTimer);
     if(shouldOpen){
+      // 先让内容参与布局，再切换类，max-height 过渡才有高度可插值
+      DOM.navTabs.style.display = 'flex';
       DOM.quickNav.classList.remove('collapsed');
       DOM.quickNav.classList.add('expanded');
-      DOM.navTabs.style.display = 'flex';
       DOM.navToggle.classList.add('active');
     } else {
       DOM.quickNav.classList.remove('expanded');
       DOM.quickNav.classList.add('collapsed');
-      DOM.navTabs.style.display = 'none';
+      // 等收起过渡结束再隐藏内容，避免高度瞬间塌陷
+      ViewFilter._navHideTimer = setTimeout(() => {
+        DOM.navTabs.style.display = 'none';
+      }, 280);
       DOM.navToggle.classList.remove('active');
     }
   },

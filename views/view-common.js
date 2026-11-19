@@ -145,9 +145,29 @@ const ViewCommon = {
     var sx = 0, cx = 0, dragging = false, lastT = 0, lastX = 0, lastY = 0;
     var animating = false;
     var animTimer = null;
+    var baseX = 0; // 手势起点：屏幕上的实际像素偏移（负值=向左）
 
     function getWidth() {
       return w.offsetWidth || 0;
+    }
+
+    /**
+     * 读取元素当前渲染位置（px），用于动画中途被抓住时从呈现值续接
+     */
+    function getCurrentX() {
+      var m = window.getComputedStyle(w).transform;
+      if (!m || m === 'none') return -idx * getWidth();
+      var mt = m.match(/matrix3d\(([^)]+)\)/);
+      if (mt) {
+        var v3 = mt[1].split(',');
+        return parseFloat(v3[12]) || 0;
+      }
+      mt = m.match(/matrix\(([^)]+)\)/);
+      if (mt) {
+        var v2 = mt[1].split(',');
+        return parseFloat(v2[4]) || 0;
+      }
+      return -idx * getWidth();
     }
 
     function setTransform(offsetPercent, animate) {
@@ -184,8 +204,11 @@ const ViewCommon = {
       if (!touch && e.type !== 'mousedown') return;
       var ww = getWidth();
       if (!ww) return;
+      // 可中断：先读屏幕实际位置，再无过渡地钉在该位置，避免从目标值重新起算造成跳变
+      baseX = getCurrentX();
       dragging = true;
       w.style.transition = 'none';
+      w.style.transform = 'translate3d(' + baseX + 'px, 0, 0)';
       if (animTimer) clearTimeout(animTimer);
       animating = false;
       sx = touch ? touch.clientX : e.clientX;
@@ -213,11 +236,8 @@ const ViewCommon = {
       lastX = nowX;
       lastY = nowY;
       lastT = Date.now();
-      var d = sx - cx;
-      var ww = getWidth();
-      if (!ww) return;
-      var offsetPercent = -(idx * 100) - (d / ww * 100);
-      w.style.transform = 'translate3d(' + offsetPercent + '%, 0, 0)';
+      // 1:1 跟手：基于手势起点位置 + 指针位移，不再用 idx 重算
+      w.style.transform = 'translate3d(' + (baseX + (nowX - sx)) + 'px, 0, 0)';
     };
 
     function end(e) {
@@ -243,6 +263,10 @@ const ViewCommon = {
         } else if (d < 0 && idx > 0) {
           idx--;
         }
+      } else {
+        // 中断后轻触（几乎无位移）：吸附到当前显示位置最近的卡片，而不是弹回旧卡
+        var visualX = baseX + (cx - sx);
+        idx = Math.min(Math.max(Math.round(-visualX / ww), 0), total - 1);
       }
 
       slide(idx, true);

@@ -14,6 +14,9 @@ const StateManager = {
     lockExclude: false,
     savedFilters: [],
     showAllFilters: false,
+    // 筛选方案分组：每个分组保存完整筛选快照
+    filterGroups: [],
+    currentGroupId: null,
     marked: {},
     locked: {},
     markCount: {},

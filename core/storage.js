@@ -18,7 +18,10 @@ const Storage = {
     // 用户偏好（主推面板"详细评分"表格展开状态）
     SCORE_TABLE_EXPANDED: 'scoreTableExpanded',
     // 当前主页临时筛选状态（新增：用于后台返回/页面刷新后恢复未保存的筛选）
-    CURRENT_FILTER: 'currentFilter'
+    CURRENT_FILTER: 'currentFilter',
+    // 筛选方案分组（完整快照）与当前激活分组
+    FILTER_GROUPS: 'filterGroups',
+    CURRENT_GROUP_ID: 'currentGroupId'
     // 注：页面子标签记忆（profile/analysis/random）改由 TAB_MEMORY 配置表管理，见下方
   }),
 

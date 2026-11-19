@@ -24,6 +24,8 @@
   background:var(--card);color:var(--text);transition:border var(--anim-fast);
 }
 .analysis-filter-select:focus,.analysis-filter-input:focus{border-color:var(--primary);outline:none}
+/* 16px：避免 iOS 聚焦时自动放大页面 */
+.analysis-filter-input{font-size:16px}
 .analysis-filter-select{flex:1;min-width:70px}
 .analysis-filter-input{flex:0.8;min-width:60px}
 .analysis-filter-btn{background:var(--primary);color:#fff;border:none;cursor:pointer;font-weight:600;flex-shrink:0;touch-action:manipulation;-webkit-user-select:none;user-select:none}

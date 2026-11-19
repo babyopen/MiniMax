@@ -1754,6 +1754,11 @@
   position: relative;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .combined-panel {
   display: none;
   animation: fadeIn 0.2s ease;
@@ -2525,4 +2530,69 @@
     text-align: left; /* 可选右对齐 */
   }
 }
+
+/* ==================== 筛选方案分组标签栏 ==================== */
+.filter-group-bar{
+  display:flex;align-items:center;gap:6px;
+  padding:10px 0 0;margin-top:10px;margin-bottom:0;
+  border-top:1px solid var(--border);
+  overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  /* 横向卡片滚动容器：阻止纵向手势被父级抢走 */
+  touch-action:pan-x;
+}
+.filter-group-bar::-webkit-scrollbar{display:none}
+
+.filter-group-tab{
+  flex-shrink:0;max-width:120px;
+  min-height:34px;padding:0 10px;
+  border-radius:9px;border:1px solid var(--border);
+  background:var(--bg-secondary);color:var(--sub-text);
+  font-size:12px;font-weight:500;line-height:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:background var(--anim-fast) ease,color var(--anim-fast) ease,border-color var(--anim-fast) ease;
+  touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;
+  position:relative;
+}
+/* 视觉 34px，热区扩到 44px */
+.filter-group-tab::after{content:'';position:absolute;inset:-5px;border-radius:14px}
+.filter-group-tab:active{transform:scale(0.97)}
+.filter-group-tab.active{
+  background:var(--primary);color:#fff;border-color:var(--primary);
+  box-shadow:0 2px 8px rgba(0,122,255,0.25);
+}
+
+.filter-group-btn{
+  flex-shrink:0;width:30px;height:30px;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:9px;border:1px solid var(--border);
+  background:var(--bg-secondary);color:var(--primary);
+  font-size:14px;line-height:1;
+  touch-action:manipulation;position:relative;
+}
+/* 视觉 30px，热区扩到 40px */
+.filter-group-btn::after{content:'';position:absolute;inset:-5px;border-radius:14px}
+.filter-group-btn:active{transform:scale(0.94)}
+.filter-group-btn.danger{color:var(--danger)}
+
+.filter-group-menu{
+  position:fixed;left:0;top:0;z-index:3000;min-width:120px;
+  padding:6px;border-radius:14px;
+  display:flex;flex-direction:column;gap:2px;
+  background:var(--card);
+  box-shadow:0 8px 28px rgba(0,0,0,0.22),0 0 0 0.5px var(--border);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  backdrop-filter:blur(20px) saturate(180%);
+}
+.filter-group-menu button{
+  padding:10px 12px;border:0;border-radius:10px;
+  background:transparent;color:var(--text);
+  font-size:13px;text-align:left;
+}
+.filter-group-menu button:active{background:var(--bg-secondary)}
+.filter-group-menu button.del{color:var(--danger)}
+
 

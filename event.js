@@ -252,6 +252,18 @@ const EventBinder = {
       else if(action === CONFIG.ACTIONS.COPY_FILTER) Business.copyFilterNums(Number(index));
       else if(action === CONFIG.ACTIONS.TOP_FILTER) Business.topFilter(Number(index));
       else if(action === CONFIG.ACTIONS.DELETE_FILTER) Business.deleteFilter(Number(index));
+      // 筛选方案分组（tab 切换 / 新建 / 长按菜单的重命名、删除 / 一键清除）
+      else if(action === CONFIG.ACTIONS.SWITCH_FILTER_GROUP) BusinessFilterGroup.switchGroup(actionBtn.dataset.groupId);
+      else if(action === CONFIG.ACTIONS.ADD_FILTER_GROUP) BusinessFilterGroup.addGroupPrompt();
+      else if(action === CONFIG.ACTIONS.RENAME_FILTER_GROUP) {
+        ViewFilterGroup.closeMenu();
+        BusinessFilterGroup.renameGroupPrompt(actionBtn.dataset.groupId);
+      }
+      else if(action === CONFIG.ACTIONS.DELETE_FILTER_GROUP) {
+        ViewFilterGroup.closeMenu();
+        BusinessFilterGroup.deleteGroupPrompt(actionBtn.dataset.groupId);
+      }
+      else if(action === CONFIG.ACTIONS.CLEAR_FILTER_GROUPS) BusinessFilterGroup.clearAllGroupsPrompt();
       // 复制主推与备选生肖（终极推荐卡片右上角按钮，DOM 顺序拼接，空格分隔）
       else if(action === 'copyMainZodiacs') {
         const card = actionBtn.closest('.db-result-container');

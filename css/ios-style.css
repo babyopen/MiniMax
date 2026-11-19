@@ -106,16 +106,23 @@
   backdrop-filter:blur(20px) saturate(180%);
   border-radius:24px;
   box-shadow:0 4px 24px var(--nav-glass-shadow),0 0 0 0.5px var(--nav-glass-border);
-  overflow:hidden;transition:all var(--anim-normal);
+  overflow:hidden;
+  /* 锚定到导航按钮（右下角），展开方向与来源一致 */
+  transform-origin:calc(100% - 28px) calc(100% + 8px);
+  transition:max-height 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+             opacity 0.2s ease,
+             transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height:0;opacity:0;transform:translateY(10px) scale(0.94);pointer-events:none;
 }
-.quick-nav.collapsed{height:0;width:0;padding:0;margin:0;opacity:0;overflow:hidden}
-.quick-nav.expanded{height:auto}
+.quick-nav.collapsed{max-height:0;opacity:0;transform:translateY(10px) scale(0.94);pointer-events:none}
+.quick-nav.expanded{max-height:340px;opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
 .nav-tabs{display:flex;gap:8px;padding:10px;flex-wrap:wrap;max-height:none}
 .nav-tabs::-webkit-scrollbar{display:none}
 .nav-tab{
   padding:9px 15px;border-radius:14px;background:var(--nav-item-bg);color:var(--nav-item-text);
   font-size:13px;font-weight:500;border:1px solid var(--nav-item-border);cursor:pointer;flex-shrink:0;
   transition:all var(--anim-fast);touch-action:manipulation;-webkit-user-select:none;user-select:none;
+  display:inline-flex;align-items:center;justify-content:center;min-height:44px;
 }
 .nav-tab:active{background:var(--nav-item-active-bg);color:var(--nav-item-active-text)}
 
@@ -292,3 +299,53 @@
   .filter-expand{background:rgba(255,255,255,0.06);color:rgba(235,235,245,0.85)}
   .filter-expand:active{background:rgba(255,255,255,0.12)}
 }
+
+/* ====================== 无障碍偏好降级 ======================
+   系统层偏好优先于设备性能降级（low-performance-mode），
+   此处放在最后加载，确保能覆盖前面的毛玻璃/动画声明。 */
+
+/* 减少动态效果：去掉位移/缩放/无限循环，保留颜色与即时反馈 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after{
+    animation-duration:0.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:0.01ms !important;
+    scroll-behavior:auto !important;
+  }
+}
+
+/* 降低透明度偏好：毛玻璃改为实底，保证文字与背景足够对比 */
+@media (prefers-reduced-transparency: reduce) {
+  .bottom-nav,
+  .bottom-nav-toggle,
+  .quick-nav,
+  .db-card{
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+    background:var(--card) !important;
+  }
+  /* Toast 是深底白字，去掉模糊后仍需保持深底可读 */
+  .toast{
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+    background:rgba(0,0,0,0.92) !important;
+  }
+}
+
+/* 提高对比度偏好：为交互元素补明确边框，便于识别可点区域 */
+@media (prefers-contrast: more) {
+  .tag,
+  .btn-mini,
+  .btn-icon,
+  .btn-line,
+  .nav-tab,
+  .bottom-nav,
+  .quick-nav{
+    border:1px solid var(--text) !important;
+  }
+  .tag,
+  .btn-icon{
+    border-width:2px !important;
+  }
+}
+

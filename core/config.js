@@ -150,7 +150,13 @@ const CONFIG = Object.freeze({
     BATCH_EXCLUDE:'batchExcludePrompt', CLEAR_EXCLUDE:'clearExclude',
     TOGGLE_SHOW_ALL:'toggleShowAllFilters', LOAD_FILTER:'loadFilter', RENAME_FILTER:'renameFilter',
     COPY_FILTER:'copyFilterNums', TOP_FILTER:'topFilter', DELETE_FILTER:'deleteFilter',
-    SWITCH_NAV:'switchBottomNav'
+    SWITCH_NAV:'switchBottomNav',
+    // 筛选方案分组（多方案集）
+    SWITCH_FILTER_GROUP:'switchFilterGroup',
+    ADD_FILTER_GROUP:'addFilterGroup',
+    RENAME_FILTER_GROUP:'renameFilterGroup',
+    DELETE_FILTER_GROUP:'deleteFilterGroup',
+    CLEAR_FILTER_GROUPS:'clearFilterGroups'
   }),
 
   // ========== 分区阈值配置 ==========

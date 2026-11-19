@@ -35,6 +35,8 @@ async function initApp() {
     Business.initFilterPersistence();
     // 15. 重新渲染一次以反映从 localStorage 恢复的筛选状态
     Render.renderAll();
+    // 15.1 初始化筛选方案分组（必须在筛选状态恢复之后，默认分组才能拿到完整快照）
+    BusinessFilterGroup.init();
     // 16. 隐藏加载遮罩
     Render.hideLoading();
 

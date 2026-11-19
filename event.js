@@ -5,7 +5,9 @@ const EventBinder = {
   init: () => {
     // 全局点击事件委托
     document.addEventListener('click', EventBinder.handleGlobalClick);
-    // 全局双击事件委托（标签锁定/解锁）
+    // 标签长按锁定/解锁
+    EventBinder.initTagLongPress();
+    // 全局双击事件委托（标记按钮清除标记）
     document.addEventListener('dblclick', EventBinder.handleDoubleClick);
     // 键盘回车/空格事件（无障碍支持）
     document.addEventListener('keydown', EventBinder.handleKeyDown);
@@ -120,12 +122,79 @@ const EventBinder = {
   },
 
   /**
-   * 全局双击处理（标签锁定/解锁、标记按钮清除标记）
+   * 标签长按 500ms 锁定/解锁；短按仍走原点击选择逻辑
+   */
+  initTagLongPress: () => {
+    let pressTimer = null;
+    let pressTag = null;
+    let pressPointerId = null;
+    let startX = 0;
+    let startY = 0;
+    let suppressClickTag = null;
+
+    const cancelPress = () => {
+      if (pressTimer) clearTimeout(pressTimer);
+      pressTimer = null;
+      pressTag = null;
+      pressPointerId = null;
+    };
+
+    document.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      suppressClickTag = null;
+      cancelPress();
+      const tag = e.target.closest ? e.target.closest('.tag[data-group]') : null;
+      if (!tag) return;
+
+      pressTag = tag;
+      pressPointerId = e.pointerId;
+      startX = e.clientX;
+      startY = e.clientY;
+      pressTimer = setTimeout(() => {
+        const lockedTag = pressTag;
+        cancelPress();
+        if (!lockedTag || !lockedTag.isConnected) return;
+
+        const group = lockedTag.dataset.group;
+        const value = Utils.formatTagValue(lockedTag.dataset.value, group);
+        StateManager.toggleTagLock(group, value);
+        // 锁定状态更新不重建标签 DOM，拦截紧随其后的抬起 click，避免误切换选中状态
+        suppressClickTag = lockedTag;
+      }, 500);
+    });
+
+    document.addEventListener('pointermove', (e) => {
+      if (!pressTimer || e.pointerId !== pressPointerId) return;
+      if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) cancelPress();
+    });
+
+    document.addEventListener('pointerup', (e) => {
+      if (e.pointerId === pressPointerId) cancelPress();
+    });
+    document.addEventListener('pointercancel', (e) => {
+      if (e.pointerId === pressPointerId) cancelPress();
+      suppressClickTag = null;
+    });
+    document.addEventListener('scroll', cancelPress, true);
+
+    // 捕获阶段先于全局 click 委托，吞掉长按后的那一次点击
+    document.addEventListener('click', (e) => {
+      if (!suppressClickTag) return;
+      const tag = e.target.closest ? e.target.closest('.tag[data-group]') : null;
+      const shouldSuppress = tag === suppressClickTag;
+      suppressClickTag = null;
+      if (!shouldSuppress) return;
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
+  },
+
+  /**
+   * 全局双击处理（标记按钮清除标记）
    * @param {MouseEvent} e - 双击事件
    */
   handleDoubleClick: (e) => {
     const target = e.target;
-    // 标记按钮双击：清空该分组所有标记（支持多分组按钮）
     const markBtn = target.closest('.btn-mini[data-action="markGroup"]');
     if (markBtn) {
       const groupAttr = markBtn.dataset.group;
@@ -134,14 +203,6 @@ const EventBinder = {
         groups.forEach(g => StateManager.clearGroupMarks(g));
         Toast.show('已清除所有标记');
       }
-      return;
-    }
-    // 标签双击：锁定/解锁
-    const tag = target.closest('.tag[data-group]');
-    if (tag) {
-      const group = tag.dataset.group;
-      const value = Utils.formatTagValue(tag.dataset.value, group);
-      StateManager.toggleTagLock(group, value);
     }
   },
 
